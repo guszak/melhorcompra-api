@@ -12,3 +12,15 @@
 
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
+
+# Log files
+*.log
+
+# Dependencies folder
+/vendor
+
+# Debug from Atom Debugger
+*debug*
+
+# Visual Studio config
+.vscode
