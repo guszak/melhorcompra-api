@@ -1,8 +1,8 @@
 package services
 
 import (
-	"github.com/guszak/bestorder/conn"
-	"github.com/guszak/bestorder/models"
+	"github.com/guszak/melhorcompra-api/conn"
+	"github.com/guszak/melhorcompra-api/models"
 )
 
 // ListarProdutos lista os produtos
@@ -16,7 +16,7 @@ func ListarProdutos(q models.Query) ([]*models.Produto, uint64, uint64, error) {
 	var total uint64
 
 	if q.Limit == 0 {
-		q.Limit = 10
+		q.Limit = 500
 	}
 
 	if q.Fields == "" {

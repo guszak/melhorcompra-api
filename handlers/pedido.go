@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/guszak/bestorder/models"
-	"github.com/guszak/bestorder/services"
+	"github.com/guszak/melhorcompra-api/models"
+	"github.com/guszak/melhorcompra-api/services"
 )
 
 // ListarPedidos lista os pedidos

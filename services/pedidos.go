@@ -1,8 +1,8 @@
 package services
 
 import (
-	"github.com/guszak/bestorder/conn"
-	"github.com/guszak/bestorder/models"
+	"github.com/guszak/melhorcompra-api/conn"
+	"github.com/guszak/melhorcompra-api/models"
 )
 
 // ListarPedidos listar Pedidos

@@ -33,34 +33,36 @@ func InitDb() *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
-
-	/* if !db.HasTable(&models.Produto{}) {
-		db.CreateTable(&models.Produto{})
-	}
-	if !db.HasTable(&models.Fornecedor{}) {
-		db.CreateTable(&models.Fornecedor{})
-	}
-	if !db.HasTable(&models.Orcamento{}) {
-		db.CreateTable(&models.Orcamento{})
-	}
-	if !db.HasTable(&models.OrcamentoFornecedor{}) {
-		db.CreateTable(&models.OrcamentoFornecedor{})
-	}
-	if !db.HasTable(&models.OrcamentoProduto{}) {
-		db.CreateTable(&models.OrcamentoProduto{})
-	}
-	if !db.HasTable(&models.Proposta{}) {
-		db.CreateTable(&models.Proposta{})
-	}
-	if !db.HasTable(&models.PropostaProduto{}) {
-		db.CreateTable(&models.PropostaProduto{})
-	}
-	if !db.HasTable(&models.Pedido{}) {
-		db.CreateTable(&models.Pedido{})
-	}
-	if !db.HasTable(&models.PedidoProduto{}) {
-		db.CreateTable(&models.PedidoProduto{})
-	} */
+	db.LogMode(true)
+	/*
+		if !db.HasTable(&models.Produto{}) {
+			db.CreateTable(&models.Produto{})
+		}
+		if !db.HasTable(&models.Fornecedor{}) {
+			db.CreateTable(&models.Fornecedor{})
+		}
+		if !db.HasTable(&models.Orcamento{}) {
+			db.CreateTable(&models.Orcamento{})
+		}
+		if !db.HasTable(&models.OrcamentoFornecedor{}) {
+			db.CreateTable(&models.OrcamentoFornecedor{})
+		}
+		if !db.HasTable(&models.OrcamentoProduto{}) {
+			db.CreateTable(&models.OrcamentoProduto{})
+		}
+		if !db.HasTable(&models.Proposta{}) {
+			db.CreateTable(&models.Proposta{})
+		}
+		if !db.HasTable(&models.PropostaProduto{}) {
+			db.CreateTable(&models.PropostaProduto{})
+		}
+		if !db.HasTable(&models.Pedido{}) {
+			db.CreateTable(&models.Pedido{})
+		}
+		if !db.HasTable(&models.PedidoProduto{}) {
+			db.CreateTable(&models.PedidoProduto{})
+		}
+	*/
 
 	return db
 }

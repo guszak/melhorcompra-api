@@ -8,9 +8,9 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/guszak/bestorder/conn"
-	"github.com/guszak/bestorder/handlers"
-	"github.com/guszak/bestorder/models"
+	"github.com/guszak/melhorcompra-api/conn"
+	"github.com/guszak/melhorcompra-api/handlers"
+	"github.com/guszak/melhorcompra-api/models"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
@@ -23,7 +23,7 @@ func main() {
 	g := gin.Default()
 	g.Use(cors.Default())
 	g.GET("/popular", gerarPopulacaoInicialAleatoria)
-	//g.POST("/orcamento", obterMelhorCompra)
+	g.POST("/orcamento", obterMelhorCompra)
 	g.GET("/produtos", handlers.ListarProdutos)
 	g.GET("/produtos/:id", handlers.VerProduto)
 	g.GET("/fornecedores", handlers.ListarFornecedores)
@@ -44,10 +44,37 @@ func gerarPopulacaoInicialAleatoria(c *gin.Context) {
 	db := conn.InitDb()
 	defer db.Close()
 
+	db.DropTableIfExists(&models.Produto{})
+	db.CreateTable(&models.Produto{})
+
+	db.DropTableIfExists(&models.Fornecedor{})
+	db.CreateTable(&models.Fornecedor{})
+
+	db.DropTableIfExists(&models.Orcamento{})
+	db.CreateTable(&models.Orcamento{})
+
+	db.DropTableIfExists(&models.OrcamentoFornecedor{})
+	db.CreateTable(&models.OrcamentoFornecedor{})
+
+	db.DropTableIfExists(&models.OrcamentoProduto{})
+	db.CreateTable(&models.OrcamentoProduto{})
+
+	db.DropTableIfExists(&models.Proposta{})
+	db.CreateTable(&models.Proposta{})
+
+	db.DropTableIfExists(&models.PropostaProduto{})
+	db.CreateTable(&models.PropostaProduto{})
+
+	db.DropTableIfExists(&models.Pedido{})
+	db.CreateTable(&models.Pedido{})
+
+	db.DropTableIfExists(&models.PedidoProduto{})
+	db.CreateTable(&models.PedidoProduto{})
+
 	// Fornecedores
 	for i := 0; i < 10; i++ {
 		//var fornecedor =
-		db.Create(models.Fornecedor{
+		db.Create(&models.Fornecedor{
 			Nome: "Fornecedor " + strconv.Itoa(i)})
 	}
 
@@ -94,8 +121,8 @@ func gerarPopulacaoInicialAleatoria(c *gin.Context) {
 					OrcamentoProdutoID: orcamento.ID,
 					ClienteProdutoID:   orcamento.Produtos[j].ProdutoID,
 					Quantidade:         orcamento.Produtos[j].Quantidade,
-					Preco:              rand.Float32(),
-					PrazoEntrega:       rand.Int()}
+					Preco:              rand.Float32() * 100,
+					PrazoEntrega:       rand.Intn(90)}
 				proposta.Produtos = append(proposta.Produtos, p)
 			}
 			db.Create(&proposta)
@@ -114,18 +141,19 @@ func obterMelhorCompra(c *gin.Context) {
 	c.Bind(&orcamento)
 
 	// Com base nos itens do orçamento, monta a população inicial com score para cada produto
-	var individuos []models.Individuo
-	obterPopulacaoInicial(orcamento, &individuos)
+	var populacao []models.Individuo
+	obterPopulacaoInicial(orcamento, &populacao)
 
 	// Obtem o score da populacao inicial com base negociacoes do fornecedor
-	gerarScorePopulacaoInicial(&individuos)
+	gerarScorePopulacaoInicial(&populacao)
 
-	// Combina os individuos em busca de atingir uma nova população
-	//combinarIndividuos(&individuos)
+	// Combina os populacao em busca de atingir uma nova população
+	//combinarIndividuos(&populacao)
+	c.JSON(http.StatusOK, populacao)
 }
 
 // Com base nos itens do orçamento, monta a população inicial com score para cada produto
-func obterPopulacaoInicial(orcamento models.Orcamento, individuos *[]models.Individuo) {
+func obterPopulacaoInicial(orcamento models.Orcamento, populacao *[]models.Individuo) {
 
 	// Conexão com o banco de dados
 	db := conn.InitDb()
@@ -157,7 +185,7 @@ func obterPopulacaoInicial(orcamento models.Orcamento, individuos *[]models.Indi
 	var produtos []*models.PropostaProduto
 	db.
 		Where("cliente_produto_id in (?)", produtosOrcamento).
-		Group("cliente_produto_id").
+		Group("fornecedor_id,cliente_produto_id").
 		Order("fornecedor_id desc, created_at desc").
 		Find(&produtos)
 
@@ -179,7 +207,7 @@ func obterPopulacaoInicial(orcamento models.Orcamento, individuos *[]models.Indi
 			Geracao: 1}
 
 		// Adiciona novo individuo na populacao inicial
-		*individuos = append(*individuos, individuo)
+		*populacao = append(*populacao, individuo)
 
 		// Adiciona os genes ao individuo
 		for i := range orcamento.Produtos {
@@ -188,7 +216,7 @@ func obterPopulacaoInicial(orcamento models.Orcamento, individuos *[]models.Indi
 
 			// Busca algum historico de orçamento para o produto e associa os dados da ultima proposta
 			for j := range produtos {
-				if orcamento.Produtos[j].ProdutoID == produtos[j].ClienteProdutoID {
+				if orcamento.Produtos[i].ProdutoID == produtos[j].ClienteProdutoID && fornecedorAtual == produtos[j].FornecedorID {
 					gene = models.Gene{
 						OrcamentoProdutoID: i,
 						ClienteProdutoID:   orcamento.Produtos[i].ProdutoID,
@@ -211,14 +239,14 @@ func obterPopulacaoInicial(orcamento models.Orcamento, individuos *[]models.Indi
 			}
 
 			// Adiciona o gene ao individuo
-			(*individuos)[individuoID].Genes = append((*individuos)[individuoID].Genes, gene)
+			(*populacao)[individuoID].Genes = append((*populacao)[individuoID].Genes, gene)
 		}
 		individuoID++
 	}
 }
 
 // Obtem o score da populacao inicial com base negociacoes do fornecedor
-func gerarScorePopulacaoInicial(individuos *[]models.Individuo) {
+func gerarScorePopulacaoInicial(populacao *[]models.Individuo) {
 
 	// Conexão com o banco de dados
 	//db := conn.InitDb()
@@ -257,50 +285,93 @@ func gerarScorePopulacaoInicial(individuos *[]models.Individuo) {
 	//Group("fornecedor_id")
 
 	// Score por produto
-	for i := range (*individuos)[0].Genes {
+	for i := range (*populacao)[0].Genes {
 
 		// Preco
 		var menorPreco, maiorPreco, notaPreco float32
 		var menorPrazo, maiorPrazo, notaPrazo int
 
 		// Maior Preço
-		for j := range *individuos {
-			if (*individuos)[j].Genes[i].Preco > maiorPreco {
-				maiorPreco = (*individuos)[j].Genes[i].Preco
+		for _, individuo := range *populacao {
+			if individuo.Genes[i].Preco > maiorPreco {
+				maiorPreco = individuo.Genes[i].Preco
 			}
 		}
 
 		// Menor Preço
 		menorPreco = maiorPreco
-		for j := range *individuos {
-			if (*individuos)[j].Genes[i].Preco < menorPreco {
-				menorPreco = (*individuos)[j].Genes[i].Preco
+		for _, individuo := range *populacao {
+			if individuo.Genes[i].Preco < menorPreco {
+				menorPreco = individuo.Genes[i].Preco
 			}
 		}
 
-		for j := range *individuos {
-			notaPreco = ((*individuos)[j].Genes[i].Preco - menorPreco) * (10 / (maiorPreco - menorPreco))
-			(*individuos)[j].Genes[i].Score += uint64(notaPreco)
+		for j := range *populacao {
+			notaPreco = (maiorPreco - (*populacao)[j].Genes[i].Preco) * (10 / (maiorPreco - menorPreco))
+			(*populacao)[j].Genes[i].Score += uint64(notaPreco)
 		}
 
 		// Maior Prazo
-		for j := range *individuos {
-			if (*individuos)[j].Genes[i].PrazoEntrega > maiorPrazo {
-				maiorPrazo = (*individuos)[j].Genes[i].PrazoEntrega
+		for j := range *populacao {
+			if (*populacao)[j].Genes[i].PrazoEntrega > maiorPrazo {
+				maiorPrazo = (*populacao)[j].Genes[i].PrazoEntrega
 			}
 		}
 
 		// Menor Prazo
 		menorPrazo = maiorPrazo
-		for j := range *individuos {
-			if (*individuos)[j].Genes[i].PrazoEntrega < menorPrazo {
-				menorPrazo = (*individuos)[j].Genes[i].PrazoEntrega
+		for j := range *populacao {
+			if (*populacao)[j].Genes[i].PrazoEntrega < menorPrazo {
+				menorPrazo = (*populacao)[j].Genes[i].PrazoEntrega
 			}
 		}
 
-		for j := range *individuos {
-			notaPrazo = ((*individuos)[j].Genes[i].PrazoEntrega - menorPrazo) * (10 / (maiorPrazo - menorPrazo))
-			(*individuos)[j].Genes[i].Score += uint64(notaPrazo)
+		for j := range *populacao {
+			notaPrazo = (maiorPrazo - (*populacao)[j].Genes[i].PrazoEntrega) * (10 / (maiorPrazo - menorPrazo))
+			(*populacao)[j].Genes[i].Score += uint64(notaPrazo)
 		}
 	}
+}
+
+// retorna o score do indivíduo
+func obterPontuacao(individuo models.Individuo) (soma uint64) {
+
+	// o score é a soma dos valores dos genes
+	for i := range individuo.Genes {
+		soma += individuo.Genes[i].Score
+	}
+	return soma
+}
+
+// realiza o cruzamento
+func cruzamento(indicePai1 int, indicePai2 int, populacao []models.Individuo, filho *models.Individuo) {
+
+	tamGenes := len(populacao[indicePai1].Genes)
+
+	// escolhe um ponto aleatoriamente no intervalo [0, tamGenes - 1]
+	ponto := rand.Intn(tamGenes)
+
+	for i := 0; i <= ponto; i++ {
+		*filho = append(*filho, populacao[indicePai1].Genes[i])
+	}
+	for i := ponto + 1; i <= tamGenes; i++ {
+		*filho = append(*filho, populacao[indicePai2].Genes[i])
+	}
+}
+
+// retorna o índice do melhor indivíduo da população
+func obterMelhor(populacao []models.Individuo) (indiceMelhor int) {
+
+	var score uint64
+	scoreMelhor := obterPontuacao(populacao[0])
+
+	for i := range populacao {
+		score = obterPontuacao(populacao[i])
+		if score > scoreMelhor {
+			indiceMelhor = i
+			scoreMelhor = score
+		}
+	}
+
+	return indiceMelhor
 }
