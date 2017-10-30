@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"net/http"
 	"os"
@@ -148,7 +149,64 @@ func obterMelhorCompra(c *gin.Context) {
 	gerarScorePopulacaoInicial(&populacao)
 
 	// Combina os populacao em busca de atingir uma nova população
-	//combinarIndividuos(&populacao)
+	geracoes := 100
+	tamTorneio := 20
+	tamPop := len(populacao)
+	probCruz := 0.7 // probabilidade de cruzamento
+	tamGenes := len(populacao[0].Genes)
+	for i := 0; i < geracoes; i++ {
+		for j := 0; j < tamTorneio; j++ {
+
+			// calcula a probabilidade de cruzamento
+			if rand.Float64() < probCruz {
+
+				// escolhe dois pais
+				indicePai1 := rand.Intn(tamPop)
+				indicePai2 := indicePai1
+				// garante que os índices dos pais não são iguais
+				for indicePai1 == indicePai2 {
+					indicePai2 = rand.Intn(tamPop)
+				}
+
+				vector < int > filho
+
+				// aplica o cruzamento de 1 ponto
+				cruzamento(indicePai1, indicePai2, filho)
+
+				scorePai := obterPontuacao(populacao[indicePai1])
+				scoreFilho := obterPontuacao(filho)
+
+				/*
+					se a pontuação (score) do filho for melhor do
+					que o pai1, então substitui o pai 1 pelo filho
+				*/
+				if scoreFilho > scorePai {
+					// faz a cópia dos genes do filho para o pai
+					for k := 0; k < tamGenes; k++ {
+						populacao[indicePai1][k] = filho[k]
+					}
+				}
+			}
+		}
+
+		fmt.Println("Geracao: ")
+		fmt.Println(i + 1)
+		fmt.Println("Melhor: ")
+
+		indiceMelhor := obterMelhor()
+		scoreMelhor := obterPontuacao(populacao[indiceMelhor])
+
+		for j := 0; j < tamGenes; j++ {
+			cout << populacao[indiceMelhor][j] << " "
+		}
+
+		cout << "\nPontuacao: " << scoreMelhor << "\n\n"
+
+		// verifica se encontrou a solução ótima global
+		//if(scoreMelhor == tamGenes)
+		//	break;
+	}
+
 	c.JSON(http.StatusOK, populacao)
 }
 
