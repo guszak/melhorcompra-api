@@ -73,14 +73,14 @@ func gerarPopulacaoInicialAleatoria(c *gin.Context) {
 	db.CreateTable(&models.PedidoProduto{})
 
 	// Fornecedores
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		//var fornecedor =
 		db.Create(&models.Fornecedor{
 			Nome: "Fornecedor " + strconv.Itoa(i)})
 	}
 
 	// Produtos
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 50; i++ {
 		//var produto = models.Produto{Descricao: "Produto " + strconv.Itoa(i), Unidade: "Unidade"}
 		db.Create(&models.Produto{
 			Descricao: "Produto " + strconv.Itoa(i),
@@ -138,22 +138,24 @@ func gerarPopulacaoInicialAleatoria(c *gin.Context) {
 func obterMelhorCompra(c *gin.Context) {
 
 	// Preenche struct do orçamento com o conteudo do body da requisição
-	var orcamento models.Orcamento
-	c.Bind(&orcamento)
+	var solicitacao models.Solicitacao
+	c.Bind(&solicitacao)
+	orcamento := solicitacao.Orcamento
 
 	// Com base nos itens do orçamento, monta a população inicial com score para cada produto
 	var populacao []models.Individuo
 	obterPopulacaoInicial(orcamento, &populacao)
 
 	// Obtem o score da populacao inicial com base negociacoes do fornecedor
-	gerarScorePopulacaoInicial(&populacao)
+	gerarScorePopulacaoInicial(&populacao, solicitacao)
 
 	// Combina os populacao em busca de atingir uma nova população
-	geracoes := 100
+	geracoes := solicitacao.Geracoes
 	tamTorneio := 20
 	tamPop := len(populacao)
 	probCruz := 0.7 // probabilidade de cruzamento
 	tamGenes := len(populacao[0].Genes)
+	var resposta models.Resposta
 	for i := 0; i < geracoes; i++ {
 		for j := 0; j < tamTorneio; j++ {
 
@@ -168,10 +170,9 @@ func obterMelhorCompra(c *gin.Context) {
 					indicePai2 = rand.Intn(tamPop)
 				}
 
-				vector < int > filho
-
+				var filho models.Individuo
 				// aplica o cruzamento de 1 ponto
-				cruzamento(indicePai1, indicePai2, filho)
+				cruzamento(indicePai1, indicePai2, populacao, &filho)
 
 				scorePai := obterPontuacao(populacao[indicePai1])
 				scoreFilho := obterPontuacao(filho)
@@ -183,31 +184,32 @@ func obterMelhorCompra(c *gin.Context) {
 				if scoreFilho > scorePai {
 					// faz a cópia dos genes do filho para o pai
 					for k := 0; k < tamGenes; k++ {
-						populacao[indicePai1][k] = filho[k]
+						populacao[indicePai1].Genes[k] = filho.Genes[k]
 					}
 				}
 			}
 		}
 
-		fmt.Println("Geracao: ")
-		fmt.Println(i + 1)
+		resposta.Labels = append(resposta.Labels, "Geracao: "+strconv.Itoa(i+1))
+		fmt.Println("Geracao: " + strconv.Itoa(i+1))
 		fmt.Println("Melhor: ")
 
-		indiceMelhor := obterMelhor()
+		indiceMelhor := obterMelhor(populacao)
 		scoreMelhor := obterPontuacao(populacao[indiceMelhor])
 
-		for j := 0; j < tamGenes; j++ {
-			cout << populacao[indiceMelhor][j] << " "
-		}
-
-		cout << "\nPontuacao: " << scoreMelhor << "\n\n"
+		// for j := 0; j < tamGenes; j++ {
+		// 	cout << populacao[indiceMelhor][j] << " "
+		// }
+		fmt.Printf("Pontuacao: ")
+		fmt.Println(scoreMelhor)
+		resposta.Scores = append(resposta.Scores, scoreMelhor)
 
 		// verifica se encontrou a solução ótima global
 		//if(scoreMelhor == tamGenes)
 		//	break;
 	}
 
-	c.JSON(http.StatusOK, populacao)
+	c.JSON(http.StatusOK, resposta)
 }
 
 // Com base nos itens do orçamento, monta a população inicial com score para cada produto
@@ -304,7 +306,7 @@ func obterPopulacaoInicial(orcamento models.Orcamento, populacao *[]models.Indiv
 }
 
 // Obtem o score da populacao inicial com base negociacoes do fornecedor
-func gerarScorePopulacaoInicial(populacao *[]models.Individuo) {
+func gerarScorePopulacaoInicial(populacao *[]models.Individuo, solicitacao models.Solicitacao) {
 
 	// Conexão com o banco de dados
 	//db := conn.InitDb()
@@ -365,7 +367,7 @@ func gerarScorePopulacaoInicial(populacao *[]models.Individuo) {
 		}
 
 		for j := range *populacao {
-			notaPreco = (maiorPreco - (*populacao)[j].Genes[i].Preco) * (10 / (maiorPreco - menorPreco))
+			notaPreco = (maiorPreco - (*populacao)[j].Genes[i].Preco) * (solicitacao.Preco / (maiorPreco - menorPreco))
 			(*populacao)[j].Genes[i].Score += uint64(notaPreco)
 		}
 
@@ -385,7 +387,7 @@ func gerarScorePopulacaoInicial(populacao *[]models.Individuo) {
 		}
 
 		for j := range *populacao {
-			notaPrazo = (maiorPrazo - (*populacao)[j].Genes[i].PrazoEntrega) * (10 / (maiorPrazo - menorPrazo))
+			notaPrazo = (maiorPrazo - (*populacao)[j].Genes[i].PrazoEntrega) * (solicitacao.Prazo / (maiorPrazo - menorPrazo))
 			(*populacao)[j].Genes[i].Score += uint64(notaPrazo)
 		}
 	}
@@ -409,11 +411,11 @@ func cruzamento(indicePai1 int, indicePai2 int, populacao []models.Individuo, fi
 	// escolhe um ponto aleatoriamente no intervalo [0, tamGenes - 1]
 	ponto := rand.Intn(tamGenes)
 
-	for i := 0; i <= ponto; i++ {
-		*filho = append(*filho, populacao[indicePai1].Genes[i])
+	for i := 0; i < ponto; i++ {
+		(*filho).Genes = append((*filho).Genes, populacao[indicePai1].Genes[i])
 	}
-	for i := ponto + 1; i <= tamGenes; i++ {
-		*filho = append(*filho, populacao[indicePai2].Genes[i])
+	for i := ponto; i < tamGenes; i++ {
+		(*filho).Genes = append((*filho).Genes, populacao[indicePai2].Genes[i])
 	}
 }
 
