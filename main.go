@@ -151,9 +151,10 @@ func obterMelhorCompra(c *gin.Context) {
 
 	// Combina os populacao em busca de atingir uma nova população
 	geracoes := solicitacao.Geracoes
-	tamTorneio := 20
+	tamTorneio := solicitacao.Torneio
 	tamPop := len(populacao)
-	probCruz := 0.7 // probabilidade de cruzamento
+	probCruz := solicitacao.Cruzamento // probabilidade de cruzamento
+	probMut := solicitacao.Mutacao     // probabilidade de mutação
 	tamGenes := len(populacao[0].Genes)
 	var resposta models.Resposta
 	for i := 0; i < geracoes; i++ {
@@ -173,6 +174,11 @@ func obterMelhorCompra(c *gin.Context) {
 				var filho models.Individuo
 				// aplica o cruzamento de 1 ponto
 				cruzamento(indicePai1, indicePai2, populacao, &filho)
+
+				// calcula a probabilidade de mutação
+				if rand.Float64() < probMut {
+					mutacao(&filho, tamGenes)
+				}
 
 				scorePai := obterPontuacao(populacao[indicePai1])
 				scoreFilho := obterPontuacao(filho)
@@ -196,6 +202,7 @@ func obterMelhorCompra(c *gin.Context) {
 
 		indiceMelhor := obterMelhor(populacao)
 		scoreMelhor := obterPontuacao(populacao[indiceMelhor])
+		resposta.Individuo = populacao[indiceMelhor]
 
 		// for j := 0; j < tamGenes; j++ {
 		// 	cout << populacao[indiceMelhor][j] << " "
@@ -417,6 +424,15 @@ func cruzamento(indicePai1 int, indicePai2 int, populacao []models.Individuo, fi
 	for i := ponto; i < tamGenes; i++ {
 		(*filho).Genes = append((*filho).Genes, populacao[indicePai2].Genes[i])
 	}
+}
+
+// realiza a mutação
+func mutacao(individuo *models.Individuo, tamGenes int) {
+	// escolhe um gene aleatoriamente no intervalo [0, tam_genes - 1]
+	gene := rand.Intn(tamGenes)
+
+	// modifica o valor do gene escolhido
+	individuo.Genes[gene].Score++
 }
 
 // retorna o índice do melhor indivíduo da população
