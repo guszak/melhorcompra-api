@@ -9,6 +9,8 @@ type Gene struct {
 	ClienteProdutoID   uint64  `form:"cliente_produto_id" json:"cliente_produto_id"`
 	Quantidade         uint64  `form:"quantidade" json:"quantidade"`
 	Preco              float32 `form:"preco" json:"preco"`
-	PrazoEntrega       int     `form:"prazo_entrega" json:"prazo_entrega"`
+	PrazoEntrega       float32 `form:"prazo_entrega" json:"prazo_entrega"`
+	Atrasos            float32 `form:"atrasos" json:"atrasos"`
+	Compras            float32 `form:"compras" json:"compras"`
 	Score              uint64  `form:"score" json:"score"`
 }

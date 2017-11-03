@@ -3,10 +3,10 @@ package models
 // Solicitacao Model
 type Solicitacao struct {
 	Preco       float32   `form:"preco" json:"preco"`
-	Prazo       int       `form:"prazo" json:"prazo"`
-	Negociacoes int       `form:"negociacoes" json:"negociacoes"`
-	Atrasadas   int       `form:"atrasadas" json:"atrasadas"`
-	Tempo       int       `form:"tempo" json:"tempo"`
+	Prazo       float32   `form:"prazo" json:"prazo"`
+	Negociacoes float32   `form:"negociacoes" json:"negociacoes"`
+	Atrasadas   float32   `form:"atrasadas" json:"atrasadas"`
+	Tempo       float32   `form:"tempo" json:"tempo"`
 	Individuos  int       `form:"individuos" json:"individuos"`
 	Geracoes    int       `form:"geracoes" json:"geracoes"`
 	Torneio     int       `form:"torneio" json:"torneio"`
