@@ -183,9 +183,6 @@ func gerarPopulacaoInicialAleatoria(c *gin.Context) {
 			}
 		}
 	}
-
-	//var pedido = Pedido{Descricao: "Teste"}
-	//db.Create(&pedido)
 }
 
 // Apresenta ao comprador a predição da melhor compra com base no histórico de compras
@@ -261,10 +258,7 @@ func obterMelhorCompra(c *gin.Context) {
 		fmt.Printf("Pontuacao: ")
 		fmt.Println(scoreMelhor)
 		resposta.Scores = append(resposta.Scores, scoreMelhor)
-
-		// verifica se encontrou a solução ótima global
-		//if(scoreMelhor == tamGenes)
-		//	break;
+		resposta.Populacao = tamPop
 	}
 
 	c.JSON(http.StatusOK, resposta)
@@ -321,20 +315,6 @@ func obterPopulacaoInicial(orcamento models.Orcamento, populacao *[]models.Indiv
 		db.ScanRows(rows, &total)
 		totais = append(totais, total)
 	}
-
-	// // Total de Pedidos
-	// var atrasos []Total
-	// rows, _ = db.
-	// 	Model(&models.Pedido{}).
-	// 	Select("fornecedor_id, count(1) as total").
-	// 	Where("fornecedor_id in (?)", fornecedores).
-	// 	Group("fornecedor_id").
-	// 	Rows()
-	// for rows.Next() {
-	// 	var atraso Total
-	// 	db.ScanRows(rows, &atraso)
-	// 	atrasos = append(atrasos, atraso)
-	// }
 
 	// // Tempo de negociacao
 	// db.

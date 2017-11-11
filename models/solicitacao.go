@@ -19,4 +19,5 @@ type Resposta struct {
 	Labels    []string  `form:"labels" json:"labels"`
 	Scores    []uint64  `form:"scores" json:"scores"`
 	Individuo Individuo `form:"individuo" json:"individuo"`
+	Populacao int       `form:"populacao" json:"populacao"`
 }
